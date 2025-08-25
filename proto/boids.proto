@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package boids;
+
+option go_package = "github.com/ZephroC/zeph-boids/proto";
+
+service Boids {
+  rpc CreateSession(BoidsRequest) returns (BoidsConfig);
+  rpc StreamSession(stream BoidsSessionRequest) returns (stream BoidFrame);
+}
+
+message BoidsRequest {
+
+}
+message BoidsConfig {
+
+}
+
+message BoidsSessionRequest {
+
+}
+
+message Vector2D {
+  float x = 1;
+  float y = 2;
+}
+
+message BoidFrame {
+  int64 frame_no = 1;
+  int32 msg_no = 2;
+  int32 msg_of = 3;
+  double timestmap = 4;
+  repeated Boid boids = 5;
+}
+
+message Boid {
+  Vector2D pos = 1;
+  Vector2D vel = 2;
+  int32 id =3;
+}
