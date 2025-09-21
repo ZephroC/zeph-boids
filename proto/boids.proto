@@ -5,19 +5,19 @@ package boids;
 option go_package = "github.com/ZephroC/zeph-boids/proto";
 
 service Boids {
-  rpc CreateSession(BoidsRequest) returns (BoidsConfig);
   rpc StreamSession(stream BoidsSessionRequest) returns (stream BoidFrame);
 }
 
-message BoidsRequest {
-
-}
-message BoidsConfig {
-
+enum RequestType {
+  CREATE = 0;
+  UPDATE = 1;
+  STOP = 2;
 }
 
 message BoidsSessionRequest {
-
+    RequestType type = 1;
+    optional Vector2D dimensions = 2;
+    int32 number_of_boids = 3;
 }
 
 message Vector2D {

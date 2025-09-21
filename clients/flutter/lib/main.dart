@@ -56,16 +56,16 @@ class _MyHomePageState extends State<MyHomePage> {
       _streaming = true;
     });
 
-    final stream = _client.createSession(BoidsRequest());
-    stream.listen((boid) {
-      setState(() {
-        _boids.add(boid);
-      });
-    }, onDone: () {
-      setState(() {
-        _streaming = false;
-      });
-    });
+    // final stream = _client.streamSession(BoidsSessionRequest());
+    // stream.listen((boid) {
+    //   setState(() {
+    //     _boids.add(boid);
+    //   });
+    // }, onDone: () {
+    //   setState(() {
+    //     _streaming = false;
+    //   });
+    // });
   }
 
   @override
@@ -86,7 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 itemCount: _boids.length,
                 itemBuilder: (context, index) {
                   final boid = _boids[index];
-                  return Text('Boid: x=${boid.x}, y=${boid.y}');
+                  return Text('Boid: x=0, y=0');
                 },
               ),
             ),
