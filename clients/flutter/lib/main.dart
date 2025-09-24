@@ -1,103 +1,121 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:grpc/grpc.dart';
-import 'package:client/src/generated/boids.pbgrpc.dart';
+import 'package:zeph_boids/src/generated/boids.pbgrpc.dart';
+
+import 'game.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const BoidsApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BoidsApp extends StatelessWidget {
+  const BoidsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Boids Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Boids Demo Home Page'),
+      title: 'Zeph Boids',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.deepPurple),
+      home: const HomePage(title: 'Zeph Boids'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   late BoidsClient _client;
-  List<Boid> _boids = [];
+  final Map<int,Boid> _boids = {};
   bool _streaming = false;
-
+  late StreamController<BoidsSessionRequest> _controller;
+  late ResponseStream<BoidFrame> _incomingStream;
   @override
   void initState() {
     super.initState();
     final channel = ClientChannel(
       'localhost',
       port: 50051,
-      options: const ChannelOptions(
-        credentials: ChannelCredentials.insecure(),
-      ),
+      options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
     );
     _client = BoidsClient(channel);
   }
 
-  void _getBoids() {
+  void _startBoids() {
     if (_streaming) {
+      stdout.writeln("Closing stream");
+      _controller.add(BoidsSessionRequest(
+          type: RequestType.STOP,
+      ));
+      _incomingStream.cancel();
       return;
     }
     setState(() {
       _streaming = true;
     });
-
-    // final stream = _client.streamSession(BoidsSessionRequest());
-    // stream.listen((boid) {
-    //   setState(() {
-    //     _boids.add(boid);
-    //   });
-    // }, onDone: () {
-    //   setState(() {
-    //     _streaming = false;
-    //   });
-    // });
+    stdout.writeln("Starting Boids Session");
+    _controller = StreamController<BoidsSessionRequest>();
+    _incomingStream = _client.streamSession(_controller.stream);
+    _controller.add(BoidsSessionRequest(
+        type: RequestType.CREATE,
+        dimensions: Vector2D(x:800,y:600),
+      numberOfBoids: 10
+    ));
+    _incomingStream.listen((boidFrame) {
+      setState(() {
+        stdout.writeln("Receive");
+        for (final boid in boidFrame.boids) {
+          _boids[boid.id] = boid;
+        }
+      });
+    }, onDone: () {
+      setState(() {
+        _streaming = false;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
+      // appBar: AppBar(title: Text(widget.title)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Boids received:',
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _boids.length,
-                itemBuilder: (context, index) {
-                  final boid = _boids[index];
-                  return Text('Boid: x=0, y=0');
-                },
-              ),
+            Expanded(child: GameWidget.controlled(gameFactory: BoidsGame.new)),
+            Row(
+              children: [
+                Slider(
+                  min: 1,
+                  max: 10,
+                  divisions: 10,
+                  value: 1,
+                  onChanged: (double value) {},
+                ),
+                FloatingActionButton(
+                    onPressed: _startBoids,
+                    tooltip: 'Start Boids Session',
+                    child: Icon(
+                        _streaming ? Icons.stop : Icons.play_arrow),
+                  ),
+              ],
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _getBoids,
-        tooltip: 'Get Boids',
-        child: const Icon(Icons.play_arrow),
-      ),
+      // floatingActionButton:
     );
   }
 }

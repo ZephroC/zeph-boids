@@ -20,6 +20,11 @@ client: proto
 
 web: proto
 	CHROME_EXECUTABLE="/var/lib/flatpak/app/com.google.Chrome/current/active/export/bin/com.google.Chrome"; export CHROME_EXECUTABLE
+	cd clients/flutter && flutter run web
+
+linux: proto
+ 	pkg-config --modversion gtk+-3.0
+	cd clients/flutter && flutter run linux
 
 
 all: server proto
