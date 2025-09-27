@@ -37,10 +37,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late BoidsClient _client;
-  final Map<int,Boid> _boids = {};
   bool _streaming = false;
   late StreamController<BoidsSessionRequest> _controller;
   late ResponseStream<BoidFrame> _incomingStream;
+  final BoidsGame game = BoidsGame();
   @override
   void initState() {
     super.initState();
@@ -69,15 +69,13 @@ class _HomePageState extends State<HomePage> {
     _incomingStream = _client.streamSession(_controller.stream);
     _controller.add(BoidsSessionRequest(
         type: RequestType.CREATE,
-        dimensions: Vector2D(x:800,y:600),
-      numberOfBoids: 10
+        dimensions: Vector2D(x:fixedWidth,y:fixedHeight),
+      numberOfBoids: 16
     ));
     _incomingStream.listen((boidFrame) {
       setState(() {
-        stdout.writeln("Receive");
-        for (final boid in boidFrame.boids) {
-          _boids[boid.id] = boid;
-        }
+        // stdout.writeln("Receive");
+        game.updateState(boidFrame);
       });
     }, onDone: () {
       setState(() {
@@ -94,7 +92,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Expanded(child: GameWidget.controlled(gameFactory: BoidsGame.new)),
+            Expanded(child: GameWidget(game: game)),
             Row(
               children: [
                 Slider(
